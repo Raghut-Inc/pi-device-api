@@ -1,6 +1,8 @@
+require('dotenv').config();
 const os = require('os');
 const express = require('express');
 const cors = require('cors');
+const { exec } = require('child_process');
 const app = express();
 const PORT = 4000;
 
@@ -22,6 +24,22 @@ app.get('/device-info', (req, res) => {
   }
 
   res.send({ mac: iface[0].mac });
+});
+
+app.post('/kill-chrome', (req, res) => {
+  const auth = req.headers['x-api-secret'];
+  if (auth !== process.env.LOCAL_API_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  exec('pkill -f chromium', (err, stdout, stderr) => {
+    if (err) {
+      console.error('❌ Failed to kill Chromium:', err);
+      return res.status(500).json({ error: 'Kill failed' });
+    }
+    console.log('✅ Chromium killed');
+    res.json({ success: true });
+  });
 });
 
 // 🚀 Start server
